@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Timer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      transition: background-color 0.5s ease;
+    }
+
+    body.work {
+      background-color: #e74c3c;
+    }
+
+    body.break {
+      background-color: #27ae60;
+    }
+
+    .container {
+      text-align: center;
+      color: #fff;
+    }
+
+    .mode-label {
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      margin-bottom: 1rem;
+      opacity: 0.9;
+    }
+
+    .timer {
+      font-size: 10rem;
+      font-weight: 200;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 2rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font-size: 1.1rem;
+      padding: 0.8rem 2rem;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background 0.2s;
+      min-width: 120px;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    button:active {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    @media (max-width: 600px) {
+      .timer {
+        font-size: 5rem;
+      }
+    }
+  </style>
+</head>
+<body class="work">
+  <div class="container">
+    <div class="mode-label" id="modeLabel">Work</div>
+    <div class="timer" id="timer">25:00</div>
+    <div class="controls">
+      <button id="startBtn">Start</button>
+      <button id="resetBtn">Reset</button>
+      <button id="switchBtn">Switch to Break</button>
+    </div>
+  </div>
+
+  <script>
+    const WORK_SECONDS = 25 * 60;
+    const BREAK_SECONDS = 5 * 60;
+
+    let totalSeconds = WORK_SECONDS;
+    let remainingSeconds = totalSeconds;
+    let intervalId = null;
+    let isWork = true;
+    let isRunning = false;
+
+    const timerEl = document.getElementById('timer');
+    const modeLabelEl = document.getElementById('modeLabel');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const switchBtn = document.getElementById('switchBtn');
+
+    function formatTime(seconds) {
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function render() {
+      timerEl.textContent = formatTime(remainingSeconds);
+      document.title = `${formatTime(remainingSeconds)} - ${isWork ? 'Work' : 'Break'}`;
+    }
+
+    function tick() {
+      if (remainingSeconds <= 0) {
+        stop();
+        notify();
+        return;
+      }
+      remainingSeconds--;
+      render();
+    }
+
+    function start() {
+      if (isRunning) {
+        stop();
+        return;
+      }
+      isRunning = true;
+      startBtn.textContent = 'Pause';
+      intervalId = setInterval(tick, 1000);
+    }
+
+    function stop() {
+      isRunning = false;
+      startBtn.textContent = 'Start';
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+
+    function reset() {
+      stop();
+      remainingSeconds = totalSeconds;
+      render();
+    }
+
+    function switchMode() {
+      stop();
+      isWork = !isWork;
+      totalSeconds = isWork ? WORK_SECONDS : BREAK_SECONDS;
+      remainingSeconds = totalSeconds;
+      document.body.className = isWork ? 'work' : 'break';
+      modeLabelEl.textContent = isWork ? 'Work' : 'Break';
+      switchBtn.textContent = isWork ? 'Switch to Break' : 'Switch to Work';
+      render();
+    }
+
+    function notify() {
+      if (Notification.permission === 'granted') {
+        new Notification(isWork ? 'Work session complete!' : 'Break is over!');
+      }
+      switchMode();
+    }
+
+    startBtn.addEventListener('click', start);
+    resetBtn.addEventListener('click', reset);
+    switchBtn.addEventListener('click', switchMode);
+
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    render();
+  </script>
+</body>
+</html>
